@@ -7,6 +7,7 @@ fn main() {
     let mut buf = [0u8; 4096];
     loop {
         let mut server = TcpStream::connect("127.0.0.1:3000").unwrap();
+
         println!("Enter input");
         io::stdin().read_line(&mut package).unwrap();
         println!("Status of package : {} ", package);
