@@ -4,7 +4,7 @@ use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
 fn main() {
     let mut package = String::with_capacity(4096);
-    
+
     loop {
         let mut server = TcpStream::connect("127.0.0.1:3000").unwrap();
         println!("Enter input\n>");
@@ -28,7 +28,7 @@ fn main() {
         // Create a BufReader and read until `\n` char
         let mut reader = BufReader::new(&server);
         reader
-            .read_line(&mut package) //Reads uptil \n 0xA 
+            .read_line(&mut package) //Reads uptil \n 0xA
             .expect("Failed to read into buffer");
 
         println!("Server says : {}", package);
