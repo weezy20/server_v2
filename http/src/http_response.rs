@@ -1,7 +1,7 @@
 //! Create HTTP Responses that can be understood by a browser
 
 use std::collections::HashMap;
-use std::fmt::Write;
+use std::io::Write;
 
 /// Type representing an HTTP response
 
@@ -29,7 +29,7 @@ impl<'a> Default for HttpResponse<'a> {
 }
 
 impl<'a> From<HttpResponse<'a>> for String {
-    fn from(hrp: HttpResponse<'a>) -> Self {
+    fn from(hrp: HttpResponse<'a>) -> String {
         let mut res = String::new();
         res.push_str(&format!(
             "{} {} {}",
@@ -89,10 +89,11 @@ impl<'a> HttpResponse<'a> {
     }
 
     /// Write the current HttpResponse object to a `Write` data type
-    pub fn send_response(&self, writer: impl)
+    pub fn send_response(&self, writer: &mut impl Write) -> std::io::Result<()>
     {
-        let res = self.clone();
-        let res = String::from(res);
-        let bytes_written = writer.write(res);
+        let res_clone = self.clone();
+        let res = String::from(res_clone);
+        // let bytes_written = writer.write(res.as_bytes())?;
+        write!(writer, "{}", res)
     }
 }
