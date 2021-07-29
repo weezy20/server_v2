@@ -47,7 +47,12 @@ impl<'a> From<HttpResponse<'a>> for String {
         }
         match hrp.body {
             None => (),
-            Some(body) => res.push_str(&body),
+            Some(body) => {
+                // There's a risk of double inserting Content-length here:
+                // hrp.headers may already contain this line
+                res.push_str(&format!(r#"\r\nContent-length: {}"#, body.len()));
+                res.push_str(&body);
+            }
         }
         res
     }
