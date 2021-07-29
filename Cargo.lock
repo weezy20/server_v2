@@ -9,10 +9,16 @@ version = "0.1.0"
 [[package]]
 name = "http_server"
 version = "0.1.0"
+dependencies = [
+ "http",
+]
 
 [[package]]
 name = "server_v2"
 version = "0.1.0"
+dependencies = [
+ "http",
+]
 
 [[package]]
 name = "tcp_client"
