@@ -42,7 +42,7 @@ impl<'a> From<HttpResponse<'a>> for String {
             Some(hashmap) => {
                 for (k, v) in hashmap {
                     // Insert one ugly check for Content-length so that it may not
-                    // be repeate in the match hrp.body code block:
+                    // be repeated in the match hrp.body code block:
                     if let Some(_) = k.find("Content-length") {
                         content_length_defined = true;
                     }
