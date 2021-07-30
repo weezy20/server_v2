@@ -47,7 +47,8 @@ impl<'a> From<HttpResponse<'a>> for String {
                         content_length_defined = true;
                     }
                     let line = k.to_string() + ": " + v;
-                    res.push_str(r#"\r\n"#);
+                    // for some reason r#"\r\n" pushes double slashes like : \\r\\n
+                    res.push_str("\r\n");
                     res.push_str(&line);
                 }
             }
@@ -58,8 +59,9 @@ impl<'a> From<HttpResponse<'a>> for String {
                 // There's a risk of double inserting Content-length here:
                 // hrp.headers may already contain this line
                 if !content_length_defined {
-                    res.push_str(&format!(r#"\r\nContent-length: {}"#, body.len()));
+                    res.push_str(&format!("\r\nContent-length: {}", body.len()));
                 }
+                res.push_str("\r\n\r\n");
                 res.push_str(&body);
             }
         }
@@ -75,6 +77,7 @@ impl<'a> HttpResponse<'a> {
         headers: Option<HashMap<&'a str, &'a str>>,
         body: Option<String>,
     ) -> Self {
+        // todo!("Add a new field to set HTTP version");
         let mut response = Self::default();
         if status_code != response.status_code {
             response.status_code = status_code;
@@ -93,7 +96,7 @@ impl<'a> HttpResponse<'a> {
                 // if not, insert it
                 headers.entry("Content-type").or_insert("text/html");
                 Some(headers)
-            },
+            }
             None => {
                 let mut h: HashMap<&'a str, &'a str> = HashMap::new();
                 h.insert("Content-type", "text/html");
@@ -160,5 +163,22 @@ mod tests {
             body: Some(body),
         };
         assert_eq!(response, expected);
+    }
+    #[test]
+    fn check_serialization_http_response() {
+        let body = "It's a nice day today";
+        let response = HttpResponse::new(
+            "500",
+            {
+                let mut h = HashMap::new();
+                h.insert("Content-type", "text/html");
+                Some(h)
+            },
+            Some(body.to_string()),
+        );
+        let response_str = String::from(response);
+
+        let expected = format!("HTTP/1.1 500 Internal Server Error\r\nContent-type: text/html\r\nContent-length: {}\r\n\r\n{}", body.len(), body);
+        assert_eq!(response_str, expected);
     }
 }
