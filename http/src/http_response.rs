@@ -1,5 +1,5 @@
 //! Create HTTP Responses that can be understood by a browser
-
+#![allow(non_snake_case)]
 use std::collections::HashMap;
 use std::io::Write;
 
@@ -29,16 +29,23 @@ impl<'a> Default for HttpResponse<'a> {
 }
 
 impl<'a> From<HttpResponse<'a>> for String {
+    // Serialize HttpResponse into a String for transmission
     fn from(hrp: HttpResponse<'a>) -> String {
         let mut res = String::new();
         res.push_str(&format!(
             "{} {} {}",
             hrp.version, hrp.status_code, hrp.status_text
         ));
+        let mut content_length_defined: bool = false;
         match hrp.headers {
             None => (),
             Some(hashmap) => {
                 for (k, v) in hashmap {
+                    // Insert one ugly check for Content-length so that it may not
+                    // be repeate in the match hrp.body code block:
+                    if let Some(_) = k.find("Content-length") {
+                        content_length_defined = true;
+                    }
                     let line = k.to_string() + ": " + v;
                     res.push_str(r#"\r\n"#);
                     res.push_str(&line);
@@ -50,7 +57,9 @@ impl<'a> From<HttpResponse<'a>> for String {
             Some(body) => {
                 // There's a risk of double inserting Content-length here:
                 // hrp.headers may already contain this line
-                res.push_str(&format!(r#"\r\nContent-length: {}"#, body.len()));
+                if !content_length_defined {
+                    res.push_str(&format!(r#"\r\nContent-length: {}"#, body.len()));
+                }
                 res.push_str(&body);
             }
         }
@@ -78,15 +87,20 @@ impl<'a> HttpResponse<'a> {
             "500" => "Internal Server Error",
             _ => "Lol",
         };
-        response.headers = match &headers {
-            Some(_) => headers,
+        response.headers = match headers {
+            Some(mut headers) => {
+                // Check if headers contains Content-type
+                // if not, insert it
+                headers.entry("Content-type").or_insert("text/html");
+                Some(headers)
+            },
             None => {
                 let mut h: HashMap<&'a str, &'a str> = HashMap::new();
                 h.insert("Content-type", "text/html");
                 Some(h)
             }
         };
-        response.body = match &body {
+        response.body = match body {
             Some(_) => body,
             None => None,
         };
@@ -94,11 +108,57 @@ impl<'a> HttpResponse<'a> {
     }
 
     /// Write the current HttpResponse object to a `Write` data type
-    pub fn send_response(&self, writer: &mut impl Write) -> std::io::Result<()>
-    {
+    pub fn send_response(&self, writer: &mut impl Write) -> std::io::Result<()> {
         let res_clone = self.clone();
         let res = String::from(res_clone);
         // let bytes_written = writer.write(res.as_bytes())?;
         write!(writer, "{}", res)
+    }
+}
+
+mod tests {
+    use super::*;
+    #[test]
+    fn check_status_200_OK() {
+        let response = HttpResponse::new("200", None, Some("lorem ipsum".into()));
+        let expected = HttpResponse {
+            version: "HTTP/1.1",
+            status_code: "200",
+            status_text: "OK",
+            headers: {
+                let mut h: HashMap<&str, &str> = HashMap::new();
+                h.insert("Content-type", "text/html");
+                Some(h)
+            },
+            body: Some(String::from("lorem ipsum")),
+        };
+        assert_eq!(response, expected);
+    }
+    #[test]
+    fn check_double_content_length_defined() {
+        let body = String::from("lorem ipsum");
+        let body_len = &body.len().to_string()[..];
+        let mut headers: HashMap<&str, &str> = HashMap::new();
+
+        headers.entry("Content-length").or_insert(body_len);
+        headers.insert("Content-type", "text/html");
+
+        let response =
+            HttpResponse::new("200", Some(headers), Some("lorem ipsum".into()));
+        let expected = HttpResponse {
+            version: "HTTP/1.1",
+            status_code: "200",
+            status_text: "OK",
+            headers: {
+                let mut h: HashMap<&str, &str> = HashMap::new();
+                h.insert("Content-type", "text/html");
+                // headers has a Content-length defined so the body block in
+                // `From<HttpResponse> for String` should not trigger
+                h.insert("Content-length", body_len);
+                Some(h)
+            },
+            body: Some(body),
+        };
+        assert_eq!(response, expected);
     }
 }
