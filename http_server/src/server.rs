@@ -39,7 +39,7 @@ impl<'a> Server<'a> {
                         let request = String::from_utf8(buf.to_vec());
                         match request {
                             Ok(req) => {
-                                Router::route(HttpRequest::from(&req));
+                                Router::route(HttpRequest::from(&req), &stream);
                             }
                             Err(_) => {
                                 eprintln!("Error parsing HTTP Request");

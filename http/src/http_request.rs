@@ -69,6 +69,12 @@ impl From<&str> for Resource {
     }
 }
 
+impl HttpRequest {
+    pub fn get_url(&self) -> String {
+        self.resource.0.clone()
+    }
+}
+
 /// The main logic of this module and the crate http. That is to parse
 /// and create a HttpRequest object from bytes or string slice in this case
 // Check From<&str> impl
