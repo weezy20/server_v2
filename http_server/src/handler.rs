@@ -11,6 +11,7 @@ pub struct StaticHandler;
 /// Serves JSON data
 pub struct WebServiceHandler;
 
+pub struct OrderStatus;
 pub trait Handler{
     /// Process the incoming request
     fn handle(req: &HttpRequest) -> HttpResponse; 
