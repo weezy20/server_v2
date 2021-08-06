@@ -22,16 +22,16 @@ impl Router {
                         false
                     };
                 let response: HttpResponse = if api_switch {
-                    WebServiceHandler::handle(req)
+                    WebServiceHandler::handle(&req)
                 } else {
-                    StaticHandler::handle(req)
+                    StaticHandler::handle(&req)
                 };
                 response.send_response(&mut stream);
             }
             // Method::Post => todo!(),
             // Method::Invalid => todo!(),
             _ => {
-                let response: HttpResponse = PageNotFound::handle(req);
+                let response: HttpResponse = PageNotFound::handle(&req);
                 response.send_response(&mut stream);
             }
         }
